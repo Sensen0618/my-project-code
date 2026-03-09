@@ -1,0 +1,46 @@
+close all   % close all windows
+clear       % clear workspace
+clc         % clear command window
+f=300e6;    %carrier frequency (Hz)
+n=100;       %number of array elements
+l=0.04*3e8/f;    %wave length (m)
+sa=361;     %sampling
+d=l/2;
+p=0:d:d*(n-1);
+angle=[-90,90];
+%angle_m=[0 14 37 45];
+%angle_m=[-14 0 26.5 37];
+%angle_m=[-37 -26.5 0 14];
+ angle_m=[30];
+%angle_n=[26.5 37];
+Rat=[1]'; %ratio
+s_m=size(angle_m,2);
+theta_list = linspace(angle(1, 1), angle(1, 2), 361);
+steering_matrixe=exp(1j*p'*2*pi/l*sin(theta_list*pi/180));
+m_steering=exp(1j*p'*2*pi/l*sin(angle_m*pi/180));
+%n_steering=exp(1j*p'*2*pi/l*sin(angle_n*pi/180));
+R=[m_steering] * [m_steering]';
+RRR=det(R);
+R_inv = pinv(R);
+C=[m_steering];
+w=R_inv*C/(C'*R_inv*C)*Rat;
+bp = zeros(1, sa);
+  for it = 1:sa
+      a = steering_matrixe(:, it);
+      bp(1, it) = abs(w' * a);
+  end
+  % Normalize.
+ bp = 20 * log10(bp / max(bp));
+
+ gain_m = zeros(1, s_m);
+    for i = 1:s_m
+      gain_m(i) = abs(w' * (m_steering(:, i)*m_steering(:, i)')* w) / abs(w'*w);
+    end
+
+plot(theta_list,bp,'LineWidth',1);
+delta = (angle(1, 2) - angle(1, 1)) / 6;
+set(gca, 'xlim',[angle(1,1)-10, angle(1, 2)+10]);
+set(gca, 'xtick',angle(1, 1):delta: angle(1, 2));    
+xlabel('Azimuth Angle (deg)');
+ylabel('Normalized Beam Pattern (dB)');
+set(gca, 'YLim', [-70,0]);
